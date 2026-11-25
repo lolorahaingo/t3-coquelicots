@@ -117,16 +117,25 @@ controls.maxPolarAngle = Math.PI * 0.47;
 controls.minDistance = 2; controls.maxDistance = 40;
 controls.update();
 
-// railings on the open edges of the terrace (not part of the Pascal export)
-const railMat = new THREE.MeshStandardMaterial({ color: 0x9fb8c4, transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
-const barMat = new THREE.MeshStandardMaterial({ color: 0x3b3b3b, roughness: 0.4, metalness: 0.7 });
+// railings on the open edges of the terrace (not part of the Pascal export), like the building's rooftop guard:
+// sage-grey powder-coated steel, dense vertical flat bars between a flat top rail and a bottom rail, 1.00 m high
+const RAIL = { height: 1.0, pitch: 0.105, barW: 0.012, barD: 0.035, color: 0xa3ab9f };
+const steelMat = new THREE.MeshStandardMaterial({ color: RAIL.color, roughness: 0.55, metalness: 0.45 });
 const railGroup = new THREE.Group();
+const barGeo = new THREE.BoxGeometry(RAIL.barW, RAIL.height - 0.1, RAIL.barD);
+const dummy = new THREE.Object3D();
 for (const [a, b] of rails) {
   const L = Math.hypot(b[0] - a[0], b[1] - a[1]), ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
   const g = new THREE.Group();
   g.position.set((a[0] + b[0]) / 2, FLOOR_Y, (a[1] + b[1]) / 2); g.rotation.y = -ang;
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(L, 0.95, 0.015), railMat); glass.position.y = 0.5; g.add(glass);
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(L, 0.04, 0.05), barMat); bar.position.y = 1.0; bar.castShadow = true; g.add(bar);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(L, 0.012, 0.06), steelMat); top.position.y = RAIL.height - 0.006; g.add(top);
+  const topEdge = new THREE.Mesh(new THREE.BoxGeometry(L, 0.04, 0.012), steelMat); topEdge.position.y = RAIL.height - 0.03; g.add(topEdge);
+  const bottom = new THREE.Mesh(new THREE.BoxGeometry(L, 0.04, 0.012), steelMat); bottom.position.y = 0.09; g.add(bottom);
+  const n = Math.max(2, Math.round(L / RAIL.pitch));
+  const bars = new THREE.InstancedMesh(barGeo, steelMat, n + 1);
+  for (let i = 0; i <= n; i++) { dummy.position.set(-L / 2 + (i * L) / n, 0.07 + (RAIL.height - 0.1) / 2, 0); dummy.updateMatrix(); bars.setMatrixAt(i, dummy.matrix); }
+  for (const m of [top, topEdge, bottom, bars]) { m.castShadow = true; m.receiveShadow = true; }
+  g.add(bars);
   railGroup.add(g);
 }
 scene.add(railGroup);
@@ -315,7 +324,11 @@ function setMode(m) {
   $('help').innerHTML = HELP[m];
   for (const l of document.querySelectorAll('.opt[data-for]')) l.hidden = !l.dataset.for.split(' ').includes(m);
   $('tip').hidden = true;
-  if (m === 'walk' && !walker.started) {
+  // shareable viewpoint: #visite=x,z,cap° (e.g. #visite=-15.5,6.2,90)
+  const at = (location.hash.match(/visite=(-?[\d.]+),(-?[\d.]+),(-?[\d.]+)(?:,(-?[\d.]+))?/) || []).slice(1).map(Number);
+  if (m === 'walk' && !walker.started && at.length === 4 && !Number.isNaN(at[0])) {
+    Object.assign(walker, { x: at[0], z: at[1], yaw: (at[2] * Math.PI) / 180, pitch: Number.isNaN(at[3]) ? -0.05 : (at[3] * Math.PI) / 180, started: true });
+  } else if (m === 'walk' && !walker.started) {
     // start in the largest room
     teleport(zonesIndoor.reduce((a, b) => (b.area > a.area ? b : a), zonesIndoor[0]));
   }
@@ -482,5 +495,5 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, mode === 'walk' ? walkCam : orbitCam);
 });
 
-setMode('orbit');
+setMode(/visite=/.test(location.hash) ? 'walk' : 'orbit');
 $('loading').classList.add('done');
