@@ -3,7 +3,8 @@
 //
 //   node coquelicots-sync.mjs status                 what is online (sizes, dates, history)
 //   node coquelicots-sync.mjs pull                   download the online scene and open it in local Pascal (creates or updates it)
-//   node coquelicots-sync.mjs push [--glb FILE]      upload the local Pascal scene (+ the GLB exported from the editor)
+//   node coquelicots-sync.mjs push [--glb FILE]      upload the local Pascal scene (+ the GLB exported from the editor);
+//                                                    refused if the online scene changed since the last pull (Fabien's edits)
 //   node coquelicots-sync.mjs pull-model [FILE]      download the online GLB (default ./laurent-online.glb)
 //   node coquelicots-sync.mjs check                  check the local scene stays inside the T3 area (what the server enforces)
 //
@@ -63,12 +64,18 @@ function backup(name, data) {
   const f = join(dir, new Date().toISOString().replace(/[:.]/g, '-') + '__' + name); writeFileSync(f, data); return f;
 }
 
+// Fabien may change the model online too: a push is only allowed if the online scene is still the one we pulled
+const LAST_PULL = join(process.cwd(), 'backups', 'last-pull.json');
+async function onlineStamp() { const s = await (await api('status')).json(); return { bundle: s.bundle?.modified || null, model: s.model?.modified || null }; }
+function recordPull(stamp) { mkdirSync(join(process.cwd(), 'backups'), { recursive: true }); writeFileSync(LAST_PULL, JSON.stringify(stamp, null, 2)); }
+
 const [cmd, ...args] = process.argv.slice(2);
 
 if (cmd === 'status') {
   console.log(JSON.stringify(await (await api('status')).json(), null, 2));
 
 } else if (cmd === 'pull') {
+  const stamp = await onlineStamp(); // taken before the download: a change in between makes the next push refuse (safe side)
   const raw = Buffer.from(await (await api('bundle.json')).arrayBuffer());
   const f = backup('bundle-online.json', raw);
   const b = JSON.parse(raw.toString('utf8')), sc = b.scene;
@@ -86,6 +93,7 @@ if (cmd === 'status') {
     r = await pascal('/api/scenes/' + sc.id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': `"${c.version}"` }, body: JSON.stringify({ name: sc.name, graph: sc.graph }) });
   }
   if (!r.ok) die(`Pascal a refusé la scène (HTTP ${r.status}) ${(await r.text()).slice(0, 300)}`);
+  recordPull(stamp);
   console.log(`✓ scène « ${sc.name} » (${Object.keys(sc.graph.nodes).length} nœuds, ${n} artefacts) importée dans Pascal : ${pascalURL().replace('127.0.0.1', 'pascal.localhost')}/scene/${sc.id}`);
   console.log(`  copie du paquet en ligne : ${f}`);
 
@@ -96,6 +104,11 @@ if (cmd === 'status') {
   const bad = checkGraph(sc.graph);
   if (bad.length) die('éléments hors du T3 (le serveur refuserait) :\n  ' + bad.slice(0, 20).join('\n  '));
   if (cmd === 'check') { console.log(`✓ ${Object.keys(sc.graph.nodes).length} nœuds, tout est dans l'emprise du T3`); process.exit(0); }
+  // never overwrite Fabien's changes: the online scene must be exactly the one we last pulled
+  let last = null; try { last = JSON.parse(readFileSync(LAST_PULL, 'utf8')); } catch {}
+  const now = await onlineStamp();
+  if (!last || last.bundle !== now.bundle)
+    die(`la maquette en ligne a changé depuis le dernier « pull » (${last ? last.bundle : 'aucun pull'} → ${now.bundle}). Faire « pull », refaire les modifications sur cette version, puis « push ». Rien n'a été envoyé.`);
   const json = JSON.stringify(sc.graph);
   const shas = [...new Set(json.match(/[0-9a-f]{64}/g) || [])];
   const artifacts = {};
@@ -104,13 +117,12 @@ if (cmd === 'status') {
     if (a.ok) { const buf = Buffer.from(await a.arrayBuffer()); if (createHash('sha256').update(buf).digest('hex') === s) artifacts[s] = buf.toString('base64'); }
   }
   const bundle = JSON.stringify({ scene: { id: sc.id, name: sc.name, graph: sc.graph }, artifacts });
-  backup('bundle-pushed.json', bundle);
-  const res = await (await api('bundle.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: bundle })).json();
-  console.log('✓ scène envoyée :', JSON.stringify(res));
+  // validate the GLB before sending anything, so scene and model never end up out of step
   const i = args.indexOf('--glb');
+  let glb = null;
   if (i >= 0) {
     const file = args[i + 1]; if (!file || !existsSync(file)) die('fichier GLB introuvable : ' + file);
-    const glb = readFileSync(file);
+    glb = readFileSync(file);
     if (glb.toString('latin1', 0, 4) !== 'glTF') die(file + " n'est pas un GLB");
     // an export made with the editor tab hidden has no doors / windows / door animations: refuse it
     const js = JSON.parse(glb.toString('utf8', 20, 20 + glb.readUInt32LE(12)));
@@ -120,11 +132,17 @@ if (cmd === 'status') {
     const anims = (js.animations || []).length;
     console.log(`  GLB : ${kinds.wall || 0}/${want.wall} murs, ${kinds.door || 0}/${want.door} portes, ${kinds.window || 0}/${want.window} fenêtres, ${anims} animations`);
     if (!kinds.wall || (kinds.door || 0) < want.door || (kinds.window || 0) < want.window || anims < want.door)
-      die("GLB incomplet (export fait avec l'éditeur caché ou pas fini de charger ?) : ré-exporter avec l'onglet de l'éditeur au premier plan et la fenêtre visible, après chargement complet. Rien n'a été envoyé pour le modèle 3D.");
+      die("GLB incomplet (export fait avec l'éditeur caché ou pas fini de charger ?) : ré-exporter avec l'onglet de l'éditeur au premier plan et la fenêtre visible, après chargement complet. Rien n'a été envoyé.");
+  }
+  backup('bundle-pushed.json', bundle);
+  const res = await (await api('bundle.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: bundle })).json();
+  console.log('✓ scène envoyée :', JSON.stringify(res));
+  if (glb) {
     const res2 = await (await api('model.glb', { method: 'PUT', headers: { 'Content-Type': 'model/gltf-binary' }, body: glb })).json();
     console.log('✓ modèle 3D envoyé :', JSON.stringify(res2));
     console.log('  → visible sur https://plan.hellofabien.fr (choisir « Laurent » dans le menu), après rechargement de la page');
   } else console.log('  (aucun GLB envoyé : la visite affichera l’ancien modèle 3D — relancer avec --glb <fichier exporté>)');
+  recordPull(await onlineStamp()); // what is online is now our own version
 
 } else if (cmd === 'pull-model') {
   const out = args[0] || 'laurent-online.glb';
