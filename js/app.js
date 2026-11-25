@@ -6,7 +6,7 @@ import { readGraph, pointInPoly, distToSeg, wallRect, itemFootprint, centroid } 
 import { buildPlanSVG, openings, alongWall, railEdges, isFloorItem, planBounds } from './plan.js';
 import { unlock, lock } from './vault.js';
 
-const FLOOR_Y = 0.05, EYE = 1.6, RADIUS = 0.22, CUT_Y = 1.3;
+const FLOOR_Y = 0.05, EYE = 1.6, RADIUS = 0.22;
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => n.toFixed(1).replace('.', ',');
 let mode = 'orbit'; // orbit | plan | walk
@@ -291,10 +291,8 @@ function zoomPlanTo(z) {
 }
 
 // ---------- options ----------
-const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), CUT_Y);
 const opt = { doors: $('optDoors') };
 function applyOptions() {
-  renderer.clippingPlanes = mode === 'orbit' ? [cutPlane] : []; // overview: walls cut at 1.30 m
   for (const o of byKind.ceiling || []) o.visible = mode === 'walk';
   scene.background = bgColor();
   for (const s of doorState.values()) s.open = opt.doors.checked;
@@ -429,7 +427,7 @@ function pick(e) {
   const r = canvas.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, mode === 'walk' ? walkCam : orbitCam);
-  const hits = ray.intersectObject(model, true).filter((h) => h.object.visible && (!renderer.clippingPlanes.length || h.point.y < CUT_Y));
+  const hits = ray.intersectObject(model, true).filter((h) => h.object.visible);
   return hits.length ? ancestorKind(hits[0].object) : null;
 }
 let lastMove = 0;
