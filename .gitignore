@@ -1,0 +1,9 @@
+backups/
+*.token
+.env
+.DS_Store
+node_modules/
+data/bundle.json
+laurent-online.glb
+.claude/
+private/
