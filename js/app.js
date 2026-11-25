@@ -161,6 +161,28 @@ for (const clip of gltf.animations) {
 }
 mixer.update(0);
 
+// two-leaf casement windows: Pascal exports them as a single 1.30 m sash with a central glazing bar.
+// Split it into two half-width leaves hinged on each jamb; the second one mirrors the animated first one.
+const twins = [];
+for (const [id, st] of doorState) {
+  const n = G.nodes[id];
+  if (n?.type !== 'window' || n.windowType !== 'casement' || n.casementStyle !== 'single' || (n.columnRatios || []).length !== 2) continue;
+  const hs = [...new Set(hingeObjects(st.clip))];
+  if (hs.length !== 1) continue;
+  const sash = hs[0];
+  const grid = sash.getObjectByName('window-sash-grid'); if (grid) grid.visible = false;
+  const twin = sash.clone(true);
+  twin.name = sash.name + ' (2)';
+  twin.position.x = -sash.position.x;
+  sash.scale.x *= 0.5;
+  twin.scale.x = -sash.scale.x;
+  const handle = twin.getObjectByName('window-handle'); if (handle) handle.visible = false;
+  sash.parent.add(twin);
+  twins.push([sash, twin]);
+}
+const syncTwins = () => { for (const [a, b] of twins) b.quaternion.set(a.quaternion.x, -a.quaternion.y, -a.quaternion.z, a.quaternion.w); };
+syncTwins();
+
 // door swing arcs for the plan, measured on the animated model
 function hingeObjects(clip) {
   return clip.tracks.map((t) => {
@@ -270,12 +292,10 @@ function zoomPlanTo(z) {
 
 // ---------- options ----------
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), CUT_Y);
-const opt = { cut: $('optCut'), furniture: $('optFurniture'), doors: $('optDoors') };
+const opt = { doors: $('optDoors') };
 function applyOptions() {
-  renderer.clippingPlanes = mode === 'orbit' && opt.cut.checked ? [cutPlane] : [];
+  renderer.clippingPlanes = mode === 'orbit' ? [cutPlane] : []; // overview: walls cut at 1.30 m
   for (const o of byKind.ceiling || []) o.visible = mode === 'walk';
-  for (const o of byKind.item || []) o.visible = opt.furniture.checked || mode === 'walk';
-  planSvg.querySelector('.items').style.display = opt.furniture.checked ? '' : 'none';
   scene.background = bgColor();
   for (const s of doorState.values()) s.open = opt.doors.checked;
 }
@@ -460,7 +480,7 @@ renderer.setAnimationLoop(() => {
     const goal = st.open ? st.dur : 0;
     if (st.t !== goal) { st.t = goal > st.t ? Math.min(goal, st.t + dt * st.dur * 1.4) : Math.max(goal, st.t - dt * st.dur * 1.4); st.action.time = st.t; moved = true; }
   }
-  if (moved) mixer.update(0);
+  if (moved) { mixer.update(0); syncTwins(); }
   renderer.render(scene, mode === 'walk' ? walkCam : orbitCam);
 });
 
