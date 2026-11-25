@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 // Modelled from its bottom (y = 0): place it at the wanted height. Back at Z = -D/2, front +Z.
 export const params = {
   width: { default: 0.6, min: 0.3, max: 2.4, step: 0.005, unit: 'm', label: 'Largeur' },
-  depth: { default: 0.33, min: 0.25, max: 0.4, step: 0.005, unit: 'm', label: 'Profondeur' },
+  depth: { default: 0.33, min: 0.25, max: 0.65, step: 0.005, unit: 'm', label: 'Profondeur' },
   height: { default: 0.7, min: 0.3, max: 1.0, step: 0.01, unit: 'm', label: 'Hauteur' },
   hood: { default: 0, min: 0, max: 1, step: 1, label: 'Hotte intégrée (0/1)' },
 }
