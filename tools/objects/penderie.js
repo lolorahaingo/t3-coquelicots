@@ -5,6 +5,7 @@ export const params = {
   depth: { default: 0.6, min: 0.4, max: 0.8, step: 0.01, unit: 'm', label: 'Profondeur' },
   sideLeft: { default: 0.02, min: 0.01, max: 0.1, step: 0.005, unit: 'm', label: 'Joue gauche' },
   sideRight: { default: 0.02, min: 0.01, max: 0.1, step: 0.005, unit: 'm', label: 'Joue droite' },
+  doors: { default: 2, min: 0, max: 4, step: 1, label: 'Portes coulissantes' },
 }
 export const mount = 'floor'
 export default function build({ params, THREE }) {
@@ -36,6 +37,20 @@ export default function build({ params, THREE }) {
     add(clothes, new RoundedBoxGeometry(0.05, len, 0.44, 2, 0.02), c, x, 1.70 - len / 2, 0)
     const hanger = add(clothes, new THREE.TorusGeometry(0.2, 0.006, 6, 24, Math.PI * 0.55), metal, x, 1.66, 0)
     hanger.rotation.y = Math.PI / 2; hanger.rotation.z = Math.PI * 0.225
+  }
+  // sliding doors on two tracks (matt white panels, thin aluminium edge profiles), top track and floor guide
+  const nd = Math.round(params.doors)
+  if (nd > 0) {
+    const sl = part('sliding_doors', 'panel')
+    const alu = mat('alu', '#c4c7ca', 0.35, 0.85), door = mat('door', '#f4f3ef', 0.6)
+    box(sl, inner, 0.05, 0.075, cx, H - 0.025, D / 2 - 0.04, alu)  // top track
+    box(sl, inner, 0.012, 0.075, cx, 0.006, D / 2 - 0.04, alu)     // bottom guide
+    const dw = inner / nd + 0.025, dh = H - 0.065
+    for (let i = 0; i < nd; i++) {
+      const x = cx - inner / 2 + (inner / nd) * (i + 0.5), z = D / 2 - (i % 2 ? 0.055 : 0.025)
+      box(sl, dw - 0.02, dh, 0.018, x, 0.012 + dh / 2, z, door)
+      for (const s of [-1, 1]) box(sl, 0.01, dh, 0.022, x + s * (dw / 2 - 0.005), 0.012 + dh / 2, z, alu) // vertical edge profiles (grip)
+    }
   }
   return g
 }
