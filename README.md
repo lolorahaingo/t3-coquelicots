@@ -25,6 +25,7 @@ Le dépôt est public mais la maquette n'y est que **chiffrée** (`data/*.enc`, 
 | `data/scene.json.enc` | graphe Pascal (murs, pièces, portes, meubles), chiffré : sert au plan, aux surfaces et aux collisions de la visite |
 | `data/meta.json` | sel et nombre d'itérations de la dérivation de clé (publics) |
 | `tools/coquelicots-sync.mjs` | synchro entre Pascal local et plan.hellofabien.fr (`status`, `pull`, `push --glb`, `check`) |
+| `tools/patch-online.mjs` | déplace / tourne / redimensionne des éléments directement dans la version en ligne (scène + GLB ensemble, sans éditeur), en repartant toujours de la dernière version de Fabien |
 | `tools/update-site.mjs` | récupère la maquette en ligne dans `private/` et la chiffre dans `data/` |
 | `tools/encrypt.mjs` | chiffre `private/` → `data/` (`--new-password` pour en générer un) |
 | `tools/serve.mjs` | serveur local de prévisualisation |
