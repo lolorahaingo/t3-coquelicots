@@ -38,7 +38,7 @@ for (const w of G.walls) {
 function seg(w, a, b) { return wallRect({ start: alongWall(w, a), end: alongWall(w, b), thickness: w.thickness }); }
 const rails = railEdges(G);
 for (const [a, b] of rails) obstacles.push(wallRect({ start: a, end: b, thickness: 0.06 }));
-const itemObstacles = G.items.filter((it) => G.nodes[it.parentId]?.type === 'level' && isFloorItem(it)).map(itemFootprint);
+let itemObstacles = G.items.filter((it) => G.nodes[it.parentId]?.type === 'level' && isFloorItem(it)).map(itemFootprint);
 
 const slabPoly = G.slab?.polygon;
 function clearance(p, withItems = true) {
@@ -61,6 +61,7 @@ const walkable = (p) => {
 
 // most open spot of each room (label position + walk start point)
 const spots = {};
+function computeSpots() {
 for (const z of G.zones) {
   const xs = z.net.map((p) => p[0]), zs = z.net.map((p) => p[1]);
   let best = null;
@@ -75,6 +76,8 @@ for (const z of G.zones) {
     }
   spots[z.id] = best ? best.p : centroid(z.net);
 }
+}
+computeSpots();
 // how far one can see from p in direction ang without leaving the room
 function viewRay(p, ang, poly, max = 12) {
   const dx = Math.cos(ang), dz = Math.sin(ang);
@@ -164,6 +167,28 @@ model.traverse((o) => {
 for (const z of byKind.zone || []) z.visible = false; // coloured zone overlays: the plan shows them instead
 for (const s of byKind.site || []) for (const c of s.children) if (!c.userData?.kind) c.visible = false; // 30 m site ground plate
 scene.add(model);
+
+// walk obstacles from the real geometry: one box per part of each piece of furniture (a bed wall unit is its columns,
+// its bed, its headboard… not one big box), floor-standing parts only
+{
+  const tmp = new THREE.Box3(), parts = [];
+  model.updateMatrixWorld(true);
+  for (const it of byKind.item || []) {
+    const groups = new Map();
+    it.traverse((o) => {
+      if (!o.isMesh || !o.geometry) return;
+      let g = o; while (g !== it && !/^part/.test(g.name || '')) g = g.parent;
+      tmp.setFromObject(o);
+      if (!groups.has(g)) groups.set(g, new THREE.Box3());
+      groups.get(g).union(tmp);
+    });
+    for (const b of groups.values()) {
+      if (b.isEmpty() || b.min.y > FLOOR_Y + 0.9 || b.max.y - Math.max(b.min.y, FLOOR_Y) < 0.12) continue;
+      parts.push([[b.min.x, b.min.z], [b.max.x, b.min.z], [b.max.x, b.max.z], [b.min.x, b.max.z]]);
+    }
+  }
+  if (parts.length) { itemObstacles = parts; computeSpots(); }
+}
 
 // door / window animations: each clip "<id>: open" is driven by hand (time set every frame)
 mixer = new THREE.AnimationMixer(model);
