@@ -81,7 +81,15 @@ if (cmd === 'status') {
   const b = JSON.parse(raw.toString('utf8')), sc = b.scene;
   let n = 0;
   for (const [sha, b64] of Object.entries(b.artifacts || {})) {
-    const r = await pascal('/api/artifacts/' + sha, { method: 'PUT', body: Buffer.from(b64, 'base64') });
+    // skip what Pascal already has; back off when it rate-limits (HTTP 429)
+    const head = await pascal('/api/artifacts/' + sha);
+    if (head.ok) { await head.arrayBuffer(); n++; continue; }
+    let r;
+    for (let k = 0; k < 20; k++) {
+      r = await pascal('/api/artifacts/' + sha, { method: 'PUT', body: Buffer.from(b64, 'base64') });
+      if (r.status !== 429) break;
+      await new Promise((res) => setTimeout(res, 1000 * (+r.headers.get('retry-after') || 1.5)));
+    }
     if (!r.ok) die(`artefact ${sha.slice(0, 12)} refusé par Pascal (HTTP ${r.status})`); n++;
   }
   const cur = await pascal('/api/scenes/' + sc.id);

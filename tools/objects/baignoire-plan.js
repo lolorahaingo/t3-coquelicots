@@ -20,11 +20,16 @@ export default function build({ THREE }) {
   // acrylic shell: rim slab with an oval basin carved by CSG (basin 1.42 x 0.56 at the rim, 0.42 deep), centred slightly west
   const ev = new Evaluator(); ev.useGroups = false
   const slab = new Brush(new RoundedBoxGeometry(L, 0.46, Wd, 3, 0.015), acryl); slab.position.set(0, H - 0.23, 0); slab.updateMatrixWorld()
-  const cut = new Brush(new THREE.SphereGeometry(1, 48, 24), acryl); cut.scale.set(0.69, 0.42, 0.27); cut.position.set(-0.06, H + 0.005, 0); cut.updateMatrixWorld()
+  // basin as drawn: a stadium (rounded ends) 1.37 x 0.50 at the rim, flat bottom, softly rounded edges, 0.40 deep
+  const st = new THREE.Shape(), bl = 1.37 / 2 - 0.25, br = 0.25
+  st.absarc(bl, 0, br, -Math.PI / 2, Math.PI / 2, false); st.absarc(-bl, 0, br, Math.PI / 2, Math.PI * 1.5, false)
+  const basin = new THREE.ExtrudeGeometry(st, { depth: 0.36, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.0, bevelSegments: 3, curveSegments: 16 })
+  basin.rotateX(Math.PI / 2) // extrude downwards from the rim
+  const cut = new Brush(basin, acryl); cut.position.set(-0.0, H + 0.05, 0); cut.updateMatrixWorld()
   const shell = ev.evaluate(slab, cut, SUBTRACTION); shell.material = acryl
   const sh = part('bath', 'acrylic'); sh.add(shell)
   // drain + overflow at the east end
-  cyl(sh, 0.025, 0.025, 0.004, 0.48, H - 0.405, 0, chrome, 24)
+  cyl(sh, 0.025, 0.025, 0.004, 0.47, H - 0.36, 0, chrome, 24)
   // deck mixer at the east end (three holes as on the plan): spout in the middle, handles either side, hand shower
   const tap = part('mixer', 'metal')
   const xd = L / 2 - 0.055

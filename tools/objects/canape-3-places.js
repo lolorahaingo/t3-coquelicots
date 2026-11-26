@@ -1,5 +1,5 @@
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
-// Compact 3-seater sofa, 200 x 88 x 80 cm, slim arms, three seat and three back cushions, oak legs. Back at Z = -D/2, seat facing +Z.
+// Compact 3-seater sofa, 182 x 85 x 80 cm, slim arms, three seat and three back cushions, oak legs. Back at Z = -D/2, seat facing +Z.
 export const params = {}
 export const mount = 'floor'
 export default function build({ THREE }) {
@@ -10,7 +10,7 @@ export default function build({ THREE }) {
   const rbox = (p, w, h, d, x, y, z, mt, r = 0.04) => add(p, new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002)), mt, x, y, z)
   const cyl = (p, rt, rb, h, x, y, z, mt) => add(p, new THREE.CylinderGeometry(rt, rb, h, 10), mt, x, y, z)
   const part = (id, type) => { const q = new THREE.Group(); q.name = 'part:' + id; if (type) q.userData.type = type; g.add(q); return q }
-  const W = 2.0, D = 0.88, legH = 0.12, arm = 0.12
+  const W = 1.82, D = 0.85, legH = 0.12, arm = 0.11
   const fab = mat('fabric', '#5d6b78', 0.95), cush = mat('fabric_cushion', '#667482', 0.95), oak = mat('oak', '#b48a5e', 0.55)
   const f = part('frame', 'fabric')
   rbox(f, W, 0.22, D - 0.02, 0, legH + 0.11, 0.01, fab, 0.03)
