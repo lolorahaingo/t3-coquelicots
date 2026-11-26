@@ -34,6 +34,14 @@ for (const v of views) {
   await send('Page.navigate', { url: base.replace(/#.*$/, '') + '?shot=' + Date.now() + hash });
   for (let i = 0; i < 60; i++) { await sleep(500); if (await ev(`document.getElementById('loading').classList.contains('done')`)) break; }
   await sleep(2500);
+  // "&hold=ms" in the hash: keep the forward key (Z) pressed that long, to check you can actually walk somewhere
+  const hold = +(hash.match(/hold=(\d+)/) || [])[1];
+  if (hold) {
+    await send('Runtime.evaluate', { expression: "dispatchEvent(new KeyboardEvent('keydown',{key:'z'}))" });
+    await sleep(hold);
+    await send('Runtime.evaluate', { expression: "dispatchEvent(new KeyboardEvent('keyup',{key:'z'}))" });
+    await sleep(800);
+  }
   const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
   writeFileSync(join(outDir, name + '.jpg'), Buffer.from(shot.result.data, 'base64'));
   console.log('✓', name);

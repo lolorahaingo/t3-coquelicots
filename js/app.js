@@ -50,7 +50,14 @@ function clearance(p, withItems = true) {
   }
   return d;
 }
-const walkable = (p) => (!slabPoly || pointInPoly(p, slabPoly)) && G.zones.some((z) => pointInPoly(p, z.polygon)) && clearance(p) > RADIUS;
+// door openings: the wall thickness under a door belongs to no room (the rooms stop on the wall axis, the terrace on the
+// facade's outer face), so a doorway is walkable in its own right — otherwise you stay stuck on the threshold
+const doorways = G.walls.flatMap((w) => openings(G, w).filter((o) => o.kind === 'door').map((o) => wallRect({ start: alongWall(w, o.a), end: alongWall(w, o.b), thickness: w.thickness + 0.3 })));
+const inDoorway = (p) => doorways.some((d) => pointInPoly(p, d));
+const walkable = (p) => {
+  const door = inDoorway(p);
+  return (door || !slabPoly || pointInPoly(p, slabPoly)) && (door || G.zones.some((z) => pointInPoly(p, z.polygon))) && clearance(p) > RADIUS;
+};
 
 // most open spot of each room (label position + walk start point)
 const spots = {};
