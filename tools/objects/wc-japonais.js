@@ -8,7 +8,7 @@ export default function build({ THREE }) {
   const M = {}
   const mat = (n, c, r = 0.5, m = 0) => M[n] || (M[n] = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, name: 'slot_' + n, side: THREE.DoubleSide }))
   const add = (p, geo, mt, x, y, z) => { const m = new THREE.Mesh(geo, mt); m.position.set(x, y, z); p.add(m); return m }
-  const rbox = (p, w, h, d, x, y, z, mt, r = 0.01) => add(p, new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001)), mt, x, y, z)
+  const rbox = (p, w, h, d, x, y, z, mt, r = 0.01) => add(p, new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001)), mt, x, y, z)
   const part = (id, type) => { const q = new THREE.Group(); q.name = 'part:' + id; if (type) q.userData.type = type; g.add(q); return q }
   const D = 0.72, back = -D / 2
   const wall = mat('paint', '#f2f0ec', 0.9), ceramic = mat('ceramic', '#fbfbfa', 0.18), chrome = mat('metal', '#c8ccd0', 0.25, 0.95)
@@ -27,12 +27,12 @@ export default function build({ THREE }) {
   shape.moveTo(-0.18, 0); shape.lineTo(0.18, 0)
   shape.bezierCurveTo(0.2, 0.25, 0.14, 0.52, 0, 0.53)
   shape.bezierCurveTo(-0.14, 0.52, -0.2, 0.25, -0.18, 0)
-  const body = new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 4, curveSegments: 24 })
+  const body = new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 10 })
   body.rotateX(Math.PI / 2)
   const b = add(bowl, body, ceramic, 0, 0.375, back + 0.18)
   // washlet seat: thicker seat + lid, side control unit on the right
   const seat = part('washlet', 'plastic')
-  const lid = new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 3, curveSegments: 24 })
+  const lid = new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 1, curveSegments: 10 })
   lid.rotateX(Math.PI / 2)
   add(seat, lid, ceramic, 0, 0.445, back + 0.2)
   rbox(seat, 0.4, 0.085, 0.17, 0, 0.44, back + 0.27, ceramic, 0.03) // rear housing (nozzle, dryer)

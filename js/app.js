@@ -458,7 +458,7 @@ canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY];
 canvas.addEventListener('click', (e) => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
   const o = pick(e); const st = o && doorState.get(o.userData.pascalId);
-  if (st && mode === 'orbit') st.open = !st.open;
+  if (st && mode !== 'plan') { st.open = !st.open; st.manual = true; }
 });
 
 // ---------- loop ----------

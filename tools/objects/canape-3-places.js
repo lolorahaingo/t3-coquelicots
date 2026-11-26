@@ -7,8 +7,8 @@ export default function build({ THREE }) {
   const M = {}
   const mat = (n, c, r = 0.9, m = 0) => M[n] || (M[n] = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, name: 'slot_' + n, side: THREE.DoubleSide }))
   const add = (p, geo, mt, x, y, z) => { const m = new THREE.Mesh(geo, mt); m.position.set(x, y, z); p.add(m); return m }
-  const rbox = (p, w, h, d, x, y, z, mt, r = 0.04) => add(p, new RoundedBoxGeometry(w, h, d, 4, Math.min(r, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002)), mt, x, y, z)
-  const cyl = (p, rt, rb, h, x, y, z, mt) => add(p, new THREE.CylinderGeometry(rt, rb, h, 14), mt, x, y, z)
+  const rbox = (p, w, h, d, x, y, z, mt, r = 0.04) => add(p, new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002)), mt, x, y, z)
+  const cyl = (p, rt, rb, h, x, y, z, mt) => add(p, new THREE.CylinderGeometry(rt, rb, h, 10), mt, x, y, z)
   const part = (id, type) => { const q = new THREE.Group(); q.name = 'part:' + id; if (type) q.userData.type = type; g.add(q); return q }
   const W = 2.0, D = 0.88, legH = 0.12, arm = 0.12
   const fab = mat('fabric', '#5d6b78', 0.95), cush = mat('fabric_cushion', '#667482', 0.95), oak = mat('oak', '#b48a5e', 0.55)

@@ -11,7 +11,7 @@ export default function build({ params, THREE }) {
   const M = {}
   const mat = (n, c, r = 0.8, m = 0) => M[n] || (M[n] = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, name: 'slot_' + n, side: THREE.DoubleSide }))
   const add = (p, geo, mt, x, y, z) => { const m = new THREE.Mesh(geo, mt); m.position.set(x, y, z); p.add(m); return m }
-  const rbox = (p, w, h, d, x, y, z, mt, r = 0.01) => add(p, new RoundedBoxGeometry(w, h, d, 3, r), mt, x, y, z)
+  const rbox = (p, w, h, d, x, y, z, mt, r = 0.01) => add(p, new RoundedBoxGeometry(w, h, d, 2, r), mt, x, y, z)
   const part = (id, type) => { const q = new THREE.Group(); q.name = 'part:' + id; if (type) q.userData.type = type; g.add(q); return q }
   const W = params.width, D = params.depth
   const oak = mat('oak', '#b48a5e', 0.6), white = mat('ceramic', '#f7f7f5', 0.25), steel = mat('metal', '#bfc3c7', 0.3, 0.9)
@@ -26,7 +26,7 @@ export default function build({ params, THREE }) {
   for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push(new THREE.Vector2(0.06 + 0.13 * Math.sin(t * Math.PI / 2), t * 0.13)) }
   pts.push(new THREE.Vector2(0.185, 0.13), new THREE.Vector2(0.17, 0.125))
   for (let i = 12; i >= 0; i--) { const t = i / 12; pts.push(new THREE.Vector2(Math.max(0.001, 0.05 + 0.12 * Math.sin(t * Math.PI / 2)), 0.012 + t * 0.113)) }
-  add(bowl, new THREE.LatheGeometry(pts, 40), white, 0, 0.45, 0.02)
+  add(bowl, new THREE.LatheGeometry(pts, 24), white, 0, 0.45, 0.02)
   const tap = part('tap', 'metal')
   add(tap, new THREE.CylinderGeometry(0.018, 0.02, 0.26, 20), steel, 0, 0.58, -D / 2 + 0.06)
   const spout = add(tap, new THREE.CylinderGeometry(0.01, 0.01, 0.14, 16), steel, 0, 0.70, -D / 2 + 0.12)

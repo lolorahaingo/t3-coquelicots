@@ -26,11 +26,11 @@ export default function build({ params, THREE }) {
       const h = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.04), black); h.position.set(x, 2.31, -Wd / 2 + 0.02); poles.add(h)
     }
   }
-  const bulbGeo = new THREE.SphereGeometry(0.03, 12, 8), capGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.03, 8)
+  const bulbGeo = new THREE.SphereGeometry(0.03, 8, 6), capGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.03, 8)
   for (let i = 0; i < n; i++) {
     const a = pts[i], b = pts[i + 1], len = a.distanceTo(b), sag = 0.12 + len * 0.06
     const curve = new THREE.QuadraticBezierCurve3(a, new THREE.Vector3((a.x + b.x) / 2, (a.y + b.y) / 2 - 2 * sag, (a.z + b.z) / 2), b)
-    cablePart.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.004, 5, false), cable))
+    cablePart.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.004, 4, false), cable))
     const k = Math.max(2, Math.round(len / 0.3))
     for (let j = 1; j < k; j++) {
       const p = curve.getPoint(j / k)

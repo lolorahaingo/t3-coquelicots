@@ -23,7 +23,7 @@ export default function build({ params, THREE }) {
   const inner = W - tL - tR, cx = (tL - tR) / 2
   box(body, inner, 0.022, D - 0.03, cx, 1.83, -0.015, paint) // hat shelf
   const rail = part('rail', 'metal')
-  const rod = add(rail, new THREE.CylinderGeometry(0.0125, 0.0125, inner, 16), metal, cx, 1.74, 0)
+  const rod = add(rail, new THREE.CylinderGeometry(0.0125, 0.0125, inner, 8), metal, cx, 1.74, 0)
   rod.rotation.z = Math.PI / 2
   // garments on hangers, grouped like a lived-in wardrobe
   const clothes = part('clothes', 'fabric')
@@ -34,8 +34,8 @@ export default function build({ params, THREE }) {
     const x = cx - inner / 2 + step * (i + 1.5) + (i % 3 === 2 ? 0.02 : 0)
     const len = [0.95, 1.05, 0.7, 1.1, 0.85][i % 5]
     const c = mat('fabric' + (i % colors.length), colors[i % colors.length], 0.95)
-    add(clothes, new RoundedBoxGeometry(0.05, len, 0.44, 2, 0.02), c, x, 1.70 - len / 2, 0)
-    const hanger = add(clothes, new THREE.TorusGeometry(0.2, 0.006, 6, 24, Math.PI * 0.55), metal, x, 1.66, 0)
+    add(clothes, new RoundedBoxGeometry(0.05, len, 0.44, 1, 0.02), c, x, 1.70 - len / 2, 0)
+    const hanger = add(clothes, new THREE.TorusGeometry(0.2, 0.006, 4, 10, Math.PI * 0.55), metal, x, 1.66, 0)
     hanger.rotation.y = Math.PI / 2; hanger.rotation.z = Math.PI * 0.225
   }
   // sliding doors on two tracks (matt white panels, thin aluminium edge profiles), top track and floor guide
